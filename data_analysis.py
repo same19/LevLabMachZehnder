@@ -1,50 +1,47 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import math
+import os
+import csv
 
-#time, intensity, intensityRefA, intensityRefB
-data = [
-    [0,1,2,3,4,5,6,7,8],
-    [1, 1, 0.5, 0.7, 0, 2.0, 3.0, 2.0, 2.0],
-    [0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7],
-    [0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95]
-]
 wavelength = 780 #nanometers
+minV =  1.8#volts
+maxV =  2.2#volts
 
 def retrieveData():
-    return []
+    data = []
+    directory = "raw_data"
+    for filename in os.listdir(directory):
+        f = os.path.join(directory, filename)
+        with open(f) as csvfile:
+            rows = list(csv.reader(csvfile))
+            start = 16
+            num = int(rows[8][1])
+            data = [[float(item[i]) for item in rows[start:start + num]] for i in range(5)]
+        break
+    return data
 
 def processData(data):
     time = [i[0] for i in data]
-    intensity = [i[1] for i in data]
-    A = [i[2] for i in data]
-    B = [i[3] for i in data]
+    # intensity = [i[1] for i in data]
+    A = [i[1] for i in data]
+    B = [i[2] for i in data]
     phase = np.arccos(
         np.multiply(
             np.subtract(
-                np.subtract(intensity, A),
+                A,
                 B
             ),
-            np.power(
-                np.multiply(
-                    2,
-                    np.multiply(A,B)
-                ),
-                -1
-            )
+            1/(maxV-minV)
         )
     )
     d = np.multiply(phase, wavelength / (2 * np.pi))
-    """
-    amp = sqrt(a^2 + b^2 + 2abcos(phase shift))
-    phase shift = arccos((I - A - B)/(2ab))
-    
-    """
     return [time, d]
 
 def main():
-    processData(data)
-    plt.plot(data[0], data[1])
+    data = retrieveData()
+    newData = processData(data)
+    plt.plot(newData[0], newData[1])
     plt.show()
 
 
